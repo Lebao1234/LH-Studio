@@ -19,7 +19,7 @@ export function RecentProjectsTable({ projects = [] }) {
     const q = search.toLowerCase()
     return projects.filter(
       (p) =>
-        p.name?.toLowerCase().includes(q) ||
+        p.title?.toLowerCase().includes(q) ||
         p.code?.toLowerCase().includes(q) ||
         p.category?.toLowerCase().includes(q)
     )
@@ -28,14 +28,11 @@ export function RecentProjectsTable({ projects = [] }) {
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
   const paginated = filtered.slice((page - 1) * pageSize, page * pageSize)
 
-  // Calculate realistic or mock progress based on status or episode counts
+  // Real progress from the list's aggregated counts: tasks first, then episodes. Null when nothing to measure.
   const getProgress = (p) => {
-    if (p.status === "completed") return 100
-    if (p.status === "cancelled") return 0
-    if (p.status === "on_hold") return 45
-    // Default dynamic progress
-    const hash = (p.name || "").split("").reduce((acc, char) => acc + char.charCodeAt(0), 0)
-    return 25 + (hash % 65)
+    if (p.tasks?.total > 0) return Math.round(((p.tasks.done ?? 0) / p.tasks.total) * 100)
+    if (p.episodes?.total > 0) return Math.round(((p.episodes.completed ?? 0) / p.episodes.total) * 100)
+    return null
   }
 
   return (
@@ -96,28 +93,32 @@ export function RecentProjectsTable({ projects = [] }) {
             ) : (
               paginated.map((p) => {
                 const progress = getProgress(p)
-                const leadUser = p.manager || p.members?.[0]?.user || { name: "Studio Director" }
+                const leadUser = (p.members?.find((m) => m.role === "manager") ?? p.members?.[0])?.user
                 const startDate = p.startDate || p.createdAt
-                const deadline = p.deadline || p.targetDate
+                const deadline = p.dueDate
 
                 return (
                   <tr key={p._id} className="hover:bg-muted/30 transition-colors group">
                     {/* Project Name */}
                     <td className="py-3.5 font-semibold text-foreground max-w-[200px]">
                       <Link to={`/projects/${p._id}`} className="hover:underline flex flex-col">
-                        <span className="truncate">{p.name}</span>
+                        <span className="truncate">{p.title}</span>
                         <span className="text-[10px] font-normal text-muted-foreground font-mono">{p.code}</span>
                       </Link>
                     </td>
 
                     {/* Client / Lead */}
                     <td className="py-3.5">
-                      <div className="flex items-center gap-2">
-                        <UserAvatar user={leadUser} size="xs" />
-                        <span className="truncate max-w-[120px] font-medium text-foreground">
-                          {leadUser.name || "Phụ trách"}
-                        </span>
-                      </div>
+                      {leadUser ? (
+                        <div className="flex items-center gap-2">
+                          <UserAvatar user={leadUser} size="xs" />
+                          <span className="truncate max-w-[120px] font-medium text-foreground">
+                            {leadUser.name}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">Chưa phân công</span>
+                      )}
                     </td>
 
                     {/* Start Date */}
@@ -127,7 +128,7 @@ export function RecentProjectsTable({ projects = [] }) {
 
                     {/* Deadline */}
                     <td className="py-3.5 text-muted-foreground">
-                      {deadline ? format(new Date(deadline), "dd/MM/yyyy", { locale: vi }) : "Đang thực hiện"}
+                      {deadline ? format(new Date(deadline), "dd/MM/yyyy", { locale: vi }) : "Chưa đặt hạn"}
                     </td>
 
                     {/* Status Badge */}
@@ -137,6 +138,9 @@ export function RecentProjectsTable({ projects = [] }) {
 
                     {/* Progress Bar with percentage */}
                     <td className="py-3.5 min-w-[140px]">
+                      {progress === null ? (
+                        <span className="text-muted-foreground">—</span>
+                      ) : (
                       <div className="flex items-center gap-2.5">
                         <div className="h-1.5 w-24 rounded-full bg-muted overflow-hidden">
                           <div
@@ -148,6 +152,7 @@ export function RecentProjectsTable({ projects = [] }) {
                           {progress}%
                         </span>
                       </div>
+                      )}
                     </td>
 
                     {/* Actions button */}

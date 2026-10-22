@@ -17,4 +17,5 @@ export const dashboardApi = {
   tasksSummary: () => api.get("/dashboard/tasks-summary").then(unwrap),
   upcomingPosts: () => api.get("/dashboard/upcoming-posts").then(unwrap),
   financialSummary: () => api.get("/dashboard/financial-summary").then(unwrap),
+  production: (period = "week") => api.get("/dashboard/production", { params: { period } }).then(unwrap),
 }

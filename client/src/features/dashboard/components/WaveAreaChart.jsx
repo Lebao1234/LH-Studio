@@ -1,37 +1,13 @@
-import { useState, useMemo } from "react"
+import { useState } from "react"
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts"
 import { WavesIcon } from "lucide-react"
-
-function generateWaveData(period = "week") {
-  if (period === "week") {
-    const days = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật"]
-    return days.map((day, i) => {
-      const output = Math.round(20 + Math.sin(i * 1.1) * 14 + i * 2.5)
-      const progress = Math.round(15 + Math.cos(i * 0.9) * 10 + i * 1.8)
-      return { label: day, output, progress, views: output * 1250 }
-    })
-  }
-
-  if (period === "month") {
-    return Array.from({ length: 15 }).map((_, i) => {
-      const output = Math.round(25 + Math.sin(i * 0.5) * 16 + Math.cos(i * 0.3) * 8)
-      const progress = Math.round(18 + Math.cos(i * 0.6) * 12)
-      return { label: `Ngày ${i * 2 + 1}`, output, progress, views: output * 1100 }
-    })
-  }
-
-  // Quarter
-  const weeks = ["Tuần 1", "Tuần 2", "Tuần 3", "Tuần 4", "Tuần 5", "Tuần 6", "Tuần 7", "Tuần 8", "Tuần 9", "Tuần 10", "Tuần 11", "Tuần 12"]
-  return weeks.map((w, i) => {
-    const output = Math.round(45 + Math.sin(i * 0.4) * 25 + i * 2)
-    const progress = Math.round(35 + Math.cos(i * 0.5) * 18 + i * 1.5)
-    return { label: w, output, progress, views: output * 1500 }
-  })
-}
+import { Skeleton } from "@/components/ui/skeleton"
+import { useProductionTrend } from "../hooks/use-dashboard"
 
 export function WaveAreaChart({ className }) {
   const [period, setPeriod] = useState("week")
-  const data = useMemo(() => generateWaveData(period), [period])
+  const trend = useProductionTrend(period)
+  const data = trend.data?.series ?? []
 
   return (
     <div className={`rounded-2xl border border-border/80 bg-card p-5 sm:p-6 shadow-xs flex flex-col justify-between ${className}`}>
@@ -46,7 +22,7 @@ export function WaveAreaChart({ className }) {
               Biểu đồ sóng — Xu hướng sản xuất video
             </h3>
             <p className="text-xs text-muted-foreground">
-              Lượn sóng biểu thị nhịp độ phát hành video & tiến độ hậu kỳ
+              Số bài đăng đã xuất bản và công việc hoàn thành theo thời gian
             </p>
           </div>
         </div>
@@ -76,6 +52,7 @@ export function WaveAreaChart({ className }) {
 
       {/* Recharts Area Wave Chart */}
       <div className="h-64 sm:h-72 w-full mt-2">
+        {trend.isLoading ? <Skeleton className="size-full rounded-xl" /> : (
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
             <defs>
@@ -97,6 +74,7 @@ export function WaveAreaChart({ className }) {
               dy={6}
             />
             <YAxis
+              allowDecimals={false}
               stroke="var(--border)"
               tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
               tickLine={false}
@@ -112,14 +90,14 @@ export function WaveAreaChart({ className }) {
                 boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
               }}
               formatter={(val, name) => [
-                `${val} mục`,
-                name === "output" ? "Video phát hành" : "Tiến độ hậu kỳ",
+                val,
+                name === "published" ? "Video phát hành" : "Công việc hoàn thành",
               ]}
             />
             {/* Wave Curve 1 */}
             <Area
               type="natural"
-              dataKey="output"
+              dataKey="published"
               stroke="#6366f1"
               strokeWidth={3}
               fillOpacity={1}
@@ -128,7 +106,7 @@ export function WaveAreaChart({ className }) {
             {/* Wave Curve 2 */}
             <Area
               type="natural"
-              dataKey="progress"
+              dataKey="tasksCompleted"
               stroke="#06b6d4"
               strokeWidth={2}
               strokeDasharray="4 4"
@@ -137,6 +115,7 @@ export function WaveAreaChart({ className }) {
             />
           </AreaChart>
         </ResponsiveContainer>
+        )}
       </div>
 
       {/* Legend */}
@@ -147,7 +126,7 @@ export function WaveAreaChart({ className }) {
         </div>
         <div className="flex items-center gap-2">
           <span className="size-2.5 rounded-full bg-[#06b6d4]" />
-          <span className="text-muted-foreground font-medium">Tiến độ hậu kỳ</span>
+          <span className="text-muted-foreground font-medium">Công việc hoàn thành</span>
         </div>
       </div>
     </div>

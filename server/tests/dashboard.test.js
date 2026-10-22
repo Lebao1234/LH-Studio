@@ -99,6 +99,46 @@ describe('Dashboard API', () => {
     expect(res.body.data[0]).toHaveProperty('channel');
   });
 
+  it('breaks posts down by channel platform in the overview', async () => {
+    const res = await owner.get('/dashboard/overview');
+
+    expect(res.body.data.postsByPlatform.youtube).toBeGreaterThanOrEqual(1);
+  });
+
+  it('returns real production throughput for the current week', async () => {
+    const before = (await owner.get('/dashboard/production')).body.data;
+
+    await owner.post('/posts').send({ channelId: channel._id, title: 'Đã đăng hôm nay', status: 'published' });
+    const done = await owner.post('/tasks').send({ projectId: project._id, title: 'Xong rồi', status: 'done', dueDate: new Date().toISOString() });
+    expect(done.status).toBe(201);
+
+    const res = await owner.get('/dashboard/production?period=week');
+    expect(res.status).toBe(200);
+    const data = res.body.data;
+
+    expect(data.period).toBe('week');
+    expect(data.series).toHaveLength(7);
+    expect(data.series.map((s) => s.label)).toEqual(['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']);
+    expect(data.totals.published).toBe(before.totals.published + 1);
+    expect(data.totals.tasksCompleted).toBe(before.totals.tasksCompleted + 1);
+    expect(data.totals.tasksDue).toBe(before.totals.tasksDue + 1);
+    expect(data.series.reduce((a, s) => a + s.published, 0)).toBe(data.totals.published);
+    expect(data.previous).toEqual({ published: 0, tasksCompleted: 0 });
+  });
+
+  it('buckets month by day and quarter by week, falling back to week for unknown periods', async () => {
+    const month = (await owner.get('/dashboard/production?period=month')).body.data;
+    expect(month.series.length).toBeGreaterThanOrEqual(28);
+    expect(month.totals.published).toBeGreaterThanOrEqual(1);
+
+    const quarter = (await owner.get('/dashboard/production?period=quarter')).body.data;
+    expect(quarter.series.length).toBeGreaterThanOrEqual(13);
+    expect(quarter.series[0].label).toBe('Tuần 1');
+
+    const fallback = (await owner.get('/dashboard/production?period=bogus')).body.data;
+    expect(fallback.period).toBe('week');
+  });
+
   it('allows studio manager to access financial summary on dashboard', async () => {
     const res = await owner.get('/dashboard/financial-summary');
 

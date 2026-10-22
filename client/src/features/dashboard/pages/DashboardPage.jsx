@@ -3,13 +3,11 @@ import { RotateCwIcon, LayoutDashboardIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { usePermissions } from "@/features/auth/auth-context"
 import { projectsApi } from "@/lib/api/projects.api"
-import { tasksApi } from "@/lib/api/tasks.api"
-import { studioApi } from "@/lib/api/studios.api"
 import {
   dashboardKeys,
   useDashboardOverview,
   useFinancialSummary,
-  useProjectStatusSummary,
+  useProductionTrend,
   useTasksSummary,
 } from "../hooks/use-dashboard"
 import { WeeklyMetricCards } from "../components/WeeklyMetricCards"
@@ -24,44 +22,29 @@ export default function DashboardPage() {
 
   // Primary dashboard queries
   const overview = useDashboardOverview()
-  const projectStatus = useProjectStatusSummary()
   const tasksSummary = useTasksSummary()
+  const week = useProductionTrend("week")
   const financial = useFinancialSummary(canSeeFinance)
 
-  // Direct entity queries for rich interactive charts & table
+  // Most recently updated projects for the table (list includes per-project task/episode counts)
   const projectsQuery = useQuery({
     queryKey: ["projects", { limit: 100 }],
     queryFn: () => projectsApi.list({ limit: 100 }),
   })
 
-  const tasksQuery = useQuery({
-    queryKey: ["tasks", { limit: 100 }],
-    queryFn: () => tasksApi.list({ limit: 100 }),
-  })
-
-  const membersQuery = useQuery({
-    queryKey: ["studios", "current", "members"],
-    queryFn: () => studioApi.members(),
-  })
-
   const projects = projectsQuery.data?.items ?? []
-  const tasks = tasksQuery.data?.items ?? []
 
   const fetching = [
     overview,
-    projectStatus,
     tasksSummary,
+    week,
     projectsQuery,
-    tasksQuery,
-    membersQuery,
     ...(canSeeFinance ? [financial] : []),
   ].some((q) => q.isFetching)
 
   const handleRefresh = () => {
     queryClient.invalidateQueries({ queryKey: dashboardKeys.all })
     queryClient.invalidateQueries({ queryKey: ["projects"] })
-    queryClient.invalidateQueries({ queryKey: ["tasks"] })
-    queryClient.invalidateQueries({ queryKey: ["studios"] })
   }
 
   return (
@@ -96,9 +79,9 @@ export default function DashboardPage() {
       {/* 1. Top Section: 4 Weekly Metric Cards */}
       <WeeklyMetricCards
         overview={overview}
-        projects={projects}
-        tasks={tasks}
+        week={week}
         financial={financial}
+        canSeeFinance={canSeeFinance}
       />
 
       {/* 2. Biểu đồ sóng (Wave Area Chart) */}
@@ -110,7 +93,12 @@ export default function DashboardPage() {
           <WeeklyProductionBarChart className="h-full" />
         </div>
         <div className="lg:col-span-5">
-          <ProductionDonutChart tasks={tasks} projects={projects} className="h-full" />
+          <ProductionDonutChart
+            byStatus={tasksSummary.data?.byStatus}
+            byPlatform={overview.data?.postsByPlatform}
+            loading={tasksSummary.isLoading || overview.isLoading}
+            className="h-full"
+          />
         </div>
       </div>
 

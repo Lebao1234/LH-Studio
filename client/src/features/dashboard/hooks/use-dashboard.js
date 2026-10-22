@@ -10,6 +10,7 @@ export const dashboardKeys = {
   tasksSummary: ["dashboard", "tasks-summary"],
   upcomingPosts: ["dashboard", "upcoming-posts"],
   financialSummary: ["dashboard", "financial-summary"],
+  production: (period) => ["dashboard", "production", period],
 }
 
 export function useDashboardOverview() {
@@ -26,6 +27,16 @@ export function useTasksSummary() {
 
 export function useUpcomingPosts() {
   return useQuery({ queryKey: dashboardKeys.upcomingPosts, queryFn: dashboardApi.upcomingPosts, staleTime: STALE })
+}
+
+/** Posts published / tasks completed / tasks due per day (week, month) or per week (quarter). */
+export function useProductionTrend(period = "week") {
+  return useQuery({
+    queryKey: dashboardKeys.production(period),
+    queryFn: () => dashboardApi.production(period),
+    staleTime: STALE,
+    placeholderData: (prev) => prev,
+  })
 }
 
 /** Finance is manager-only: pass `enabled = canSeeFinance` so the request is never sent otherwise. */

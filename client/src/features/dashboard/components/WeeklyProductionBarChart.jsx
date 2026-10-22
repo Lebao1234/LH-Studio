@@ -1,16 +1,11 @@
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts"
 import { BarChart3Icon } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
+import { useProductionTrend } from "../hooks/use-dashboard"
 
 export function WeeklyProductionBarChart({ className }) {
-  const data = [
-    { day: "Thứ 2", target: 8, completed: 7 },
-    { day: "Thứ 3", target: 10, completed: 11 },
-    { day: "Thứ 4", target: 9, completed: 8 },
-    { day: "Thứ 5", target: 12, completed: 14 },
-    { day: "Thứ 6", target: 11, completed: 10 },
-    { day: "Thứ 7", target: 14, completed: 15 },
-    { day: "CN", target: 6, completed: 8 },
-  ]
+  const week = useProductionTrend("week")
+  const data = week.data?.series ?? []
 
   return (
     <div className={`rounded-2xl border border-border/80 bg-card p-5 sm:p-6 shadow-xs flex flex-col justify-between ${className}`}>
@@ -25,7 +20,7 @@ export function WeeklyProductionBarChart({ className }) {
               Biểu đồ cột — Sản lượng từng ngày
             </h3>
             <p className="text-xs text-muted-foreground">
-              So sánh khối lượng công việc chỉ tiêu và thực tế hoàn thành
+              Công việc đến hạn so với công việc hoàn thành mỗi ngày trong tuần
             </p>
           </div>
         </div>
@@ -33,10 +28,11 @@ export function WeeklyProductionBarChart({ className }) {
 
       {/* Bar Chart */}
       <div className="h-64 sm:h-72 w-full mt-2">
+        {week.isLoading ? <Skeleton className="size-full rounded-xl" /> : (
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }} barGap={6}>
             <XAxis
-              dataKey="day"
+              dataKey="label"
               stroke="var(--border)"
               tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
               tickLine={false}
@@ -44,6 +40,7 @@ export function WeeklyProductionBarChart({ className }) {
               dy={6}
             />
             <YAxis
+              allowDecimals={false}
               stroke="var(--border)"
               tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
               tickLine={false}
@@ -59,37 +56,38 @@ export function WeeklyProductionBarChart({ className }) {
                 boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
               }}
               formatter={(val, name) => [
-                `${val} tập/tasks`,
-                name === "completed" ? "Thực tế hoàn thành" : "Chỉ tiêu đề ra",
+                `${val} việc`,
+                name === "tasksCompleted" ? "Hoàn thành" : "Đến hạn",
               ]}
             />
             {/* Target bar */}
             <Bar
-              dataKey="target"
+              dataKey="tasksDue"
               fill="#cbd5e1"
               radius={[5, 5, 0, 0]}
               maxBarSize={22}
             />
             {/* Completed bar */}
             <Bar
-              dataKey="completed"
+              dataKey="tasksCompleted"
               fill="#3b82f6"
               radius={[5, 5, 0, 0]}
               maxBarSize={22}
             />
           </BarChart>
         </ResponsiveContainer>
+        )}
       </div>
 
       {/* Legend */}
       <div className="flex items-center justify-end gap-5 pt-3 border-t border-border/50 text-xs">
         <div className="flex items-center gap-2">
           <span className="size-2.5 rounded-sm bg-[#cbd5e1]" />
-          <span className="text-muted-foreground font-medium">Chỉ tiêu</span>
+          <span className="text-muted-foreground font-medium">Đến hạn</span>
         </div>
         <div className="flex items-center gap-2">
           <span className="size-2.5 rounded-sm bg-[#3b82f6]" />
-          <span className="text-muted-foreground font-medium">Thực tế đạt được</span>
+          <span className="text-muted-foreground font-medium">Hoàn thành</span>
         </div>
       </div>
     </div>

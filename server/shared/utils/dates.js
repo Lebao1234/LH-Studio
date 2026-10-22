@@ -32,3 +32,20 @@ export function zonedMonthRange(timeZone = 'Asia/Ho_Chi_Minh', date = new Date()
 }
 
 export const addDays = (date, days) => new Date(date.getTime() + days * 86_400_000);
+
+/** Calendar date ({ y, m, d }, month 0-based) of `date` as seen in the given time zone. */
+export function zonedCalendarDate(timeZone = 'Asia/Ho_Chi_Minh', date = new Date()) {
+  const local = new Date(date.getTime() + tzOffsetMs(timeZone, date));
+  return { y: local.getUTCFullYear(), m: local.getUTCMonth(), d: local.getUTCDate() };
+}
+
+/** Instant of local midnight for a calendar date in the given time zone (overflowing d/m roll over). */
+export function zonedDayStart(timeZone, y, m, d) {
+  const guess = new Date(Date.UTC(y, m, d));
+  return new Date(guess.getTime() - tzOffsetMs(timeZone, guess));
+}
+
+/** "YYYY-MM-DD" key of a calendar date (overflowing d/m roll over). */
+export function dayKey(y, m, d) {
+  return new Date(Date.UTC(y, m, d)).toISOString().slice(0, 10);
+}

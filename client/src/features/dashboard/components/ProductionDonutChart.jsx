@@ -1,28 +1,23 @@
 import { useState } from "react"
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts"
 import { PieChartIcon } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
+import { PLATFORMS, TASK_STATUS } from "@/lib/constants/labels"
 
-export function ProductionDonutChart({ tasks = [], className }) {
+const STATUS_COLORS = { done: "#10b981", in_progress: "#3b82f6", review: "#f59e0b", todo: "#8b5cf6", cancelled: "#94a3b8" }
+const PLATFORM_COLORS = { youtube: "#ef4444", tiktok: "#06b6d4", facebook: "#3b82f6", other: "#a855f7" }
+
+/** Studio-wide counts from the dashboard aggregations (not a paginated slice of the list). */
+export function ProductionDonutChart({ byStatus = {}, byPlatform = {}, loading, className }) {
   const [metricType, setMetricType] = useState("status")
 
-  const completed = tasks.filter((t) => t.status === "done").length || 42
-  const inProgress = tasks.filter((t) => t.status === "in_progress").length || 28
-  const review = tasks.filter((t) => t.status === "review").length || 14
-  const todo = tasks.filter((t) => t.status === "todo").length || 9
+  const statusData = Object.keys(STATUS_COLORS)
+    .map((key) => ({ name: TASK_STATUS[key].label, value: byStatus[key] ?? 0, color: STATUS_COLORS[key] }))
+    .filter((d) => d.value > 0)
 
-  const statusData = [
-    { name: "Hoàn thành", value: completed, color: "#10b981", percent: "45%" }, // Emerald
-    { name: "Đang sản xuất", value: inProgress, color: "#3b82f6", percent: "30%" }, // Blue
-    { name: "Chờ duyệt", value: review, color: "#f59e0b", percent: "15%" }, // Amber
-    { name: "Lên kịch bản", value: todo, color: "#8b5cf6", percent: "10%" }, // Purple
-  ]
-
-  const platformData = [
-    { name: "YouTube", value: 36, color: "#ef4444", percent: "40%" },
-    { name: "TikTok", value: 27, color: "#06b6d4", percent: "30%" },
-    { name: "Facebook", value: 18, color: "#3b82f6", percent: "20%" },
-    { name: "Khác", value: 9, color: "#a855f7", percent: "10%" },
-  ]
+  const platformData = Object.keys(PLATFORM_COLORS)
+    .map((key) => ({ name: PLATFORMS[key].label, value: byPlatform[key] ?? 0, color: PLATFORM_COLORS[key] }))
+    .filter((d) => d.value > 0)
 
   const activeData = metricType === "status" ? statusData : platformData
   const total = activeData.reduce((acc, curr) => acc + curr.value, 0)
@@ -40,7 +35,7 @@ export function ProductionDonutChart({ tasks = [], className }) {
               Biểu đồ tròn — Tỷ trọng phân bổ
             </h3>
             <p className="text-xs text-muted-foreground">
-              Tỷ lệ tiến độ & phân loại nội dung sản xuất
+              Công việc theo trạng thái & bài đăng theo nền tảng
             </p>
           </div>
         </div>
@@ -57,6 +52,10 @@ export function ProductionDonutChart({ tasks = [], className }) {
 
       {/* Donut Chart with central total */}
       <div className="relative h-56 w-full flex items-center justify-center my-auto">
+        {loading ? <Skeleton className="size-44 rounded-full" /> : total === 0 ? (
+          <p className="text-xs text-muted-foreground">Chưa có dữ liệu</p>
+        ) : (
+        <>
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Tooltip
@@ -93,9 +92,11 @@ export function ProductionDonutChart({ tasks = [], className }) {
             {total}
           </span>
           <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-            Tổng nội dung
+            {metricType === "status" ? "Công việc" : "Bài đăng"}
           </span>
         </div>
+        </>
+        )}
       </div>
 
       {/* Legend with percentages */}

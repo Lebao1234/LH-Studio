@@ -11,6 +11,7 @@ router.get('/overview', handle(service.overview));
 router.get('/project-status', handle(service.projectStatus));
 router.get('/tasks-summary', handle(service.tasksSummary));
 router.get('/upcoming-posts', handle((ctx) => service.upcomingPosts(ctx)));
+router.get('/production', async (req, res) => sendSuccess(res, { data: await service.production(req.ctx, { period: req.query.period }) }));
 router.get('/financial-summary', requireStudioManager, handle(service.financialSummary));
 
 export default router;
