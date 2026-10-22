@@ -23,7 +23,7 @@ import { useAuth } from "@/features/auth/auth-context"
 import { projectsApi } from "@/lib/api/projects.api"
 import { tasksApi } from "@/lib/api/tasks.api"
 import { studioApi } from "@/lib/api/studios.api"
-import { PROJECT_STATUS, TASK_STATUS, STUDIO_ROLES } from "@/lib/constants/labels"
+import { PRIORITY, PROJECT_STATUS, TASK_STATUS, TASK_TYPES, STUDIO_ROLES } from "@/lib/constants/labels"
 import { EditProfileDialog } from "../components/EditProfileDialog"
 
 export default function ProfilePage() {
@@ -38,8 +38,8 @@ export default function ProfilePage() {
   })
 
   const tasksQuery = useQuery({
-    queryKey: ["tasks", { limit: 100 }],
-    queryFn: () => tasksApi.list({ limit: 100 }),
+    queryKey: ["tasks", { mine: true, limit: 100 }],
+    queryFn: () => tasksApi.list({ mine: true, limit: 100 }),
   })
 
   const membersQuery = useQuery({
@@ -51,15 +51,13 @@ export default function ProfilePage() {
   const tasks = tasksQuery.data?.items ?? []
   const members = membersQuery.data ?? []
 
-  const myTasks = tasks.filter((t) => t.assignments?.some((a) => a.userId === user?._id || a.user?._id === user?._id))
-  const displayedTasks = myTasks.length > 0 ? myTasks : tasks.slice(0, 5)
 
   // Real activities generated from recent projects and tasks
   const recentActivities = [
     ...projects.slice(0, 3).map((p) => ({
       id: `proj-${p._id}`,
       type: "project",
-      title: `Dự án "${p.name}"`,
+      title: `Dự án "${p.title}"`,
       badge: p.status,
       badgeMap: PROJECT_STATUS,
       date: p.updatedAt || p.createdAt,
@@ -68,14 +66,14 @@ export default function ProfilePage() {
       icon: FilmIcon,
       actionText: "Xem dự án",
     })),
-    ...displayedTasks.slice(0, 3).map((t) => ({
+    ...tasks.slice(0, 3).map((t) => ({
       id: `task-${t._id}`,
       type: "task",
-      title: `Công việc "${t.name}"`,
+      title: `Công việc "${t.title}"`,
       badge: t.status,
       badgeMap: TASK_STATUS,
       date: t.updatedAt || t.createdAt,
-      desc: `Giai đoạn: ${t.stage || "Hậu kỳ"} • Ưu tiên: ${t.priority || "Trung bình"}`,
+      desc: `${t.project ? `${t.project.code} • ` : ""}Loại: ${TASK_TYPES[t.type]?.label ?? "Khác"} • Ưu tiên: ${PRIORITY[t.priority]?.label ?? "—"}`,
       link: `/tasks`,
       icon: ListTodoIcon,
       actionText: "Chi tiết việc",
@@ -168,19 +166,19 @@ export default function ProfilePage() {
             <div className="mt-6 w-full grid grid-cols-3 divide-x divide-border/60 rounded-xl bg-muted/40 py-3.5 px-2 border border-border/50 text-center">
               <div>
                 <p className="text-lg font-bold text-foreground">
-                  {tasksQuery.isLoading ? <Skeleton className="h-6 w-8 mx-auto" /> : tasks.length}
+                  {tasksQuery.isLoading ? <Skeleton className="h-6 w-8 mx-auto" /> : (tasksQuery.data?.meta?.total ?? 0)}
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">Tasks</p>
               </div>
               <div>
                 <p className="text-lg font-bold text-foreground">
-                  {projectsQuery.isLoading ? <Skeleton className="h-6 w-8 mx-auto" /> : projects.length}
+                  {projectsQuery.isLoading ? <Skeleton className="h-6 w-8 mx-auto" /> : (projectsQuery.data?.meta?.total ?? 0)}
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">Projects</p>
               </div>
               <div>
                 <p className="text-lg font-bold text-foreground">
-                  {membersQuery.isLoading ? <Skeleton className="h-6 w-8 mx-auto" /> : members.length || 1}
+                  {membersQuery.isLoading ? <Skeleton className="h-6 w-8 mx-auto" /> : members.length}
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">Members</p>
               </div>
@@ -348,7 +346,7 @@ export default function ProfilePage() {
                           <tr key={p._id} className="hover:bg-muted/30 transition-colors">
                             <td className="py-2.5 font-medium truncate max-w-[120px]">
                               <Link to={`/projects/${p._id}`} className="hover:underline text-foreground">
-                                {p.name}
+                                {p.title}
                               </Link>
                             </td>
                             <td className="py-2.5">
