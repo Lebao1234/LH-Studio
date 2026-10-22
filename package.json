@@ -1,0 +1,27 @@
+{
+  "name": "lh-studio",
+  "version": "1.0.0",
+  "private": true,
+  "description": "LH Studio - Unified Monorepo (Client + Server)",
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "dev": "concurrently -n \"SERVER,CLIENT\" -c \"blue.bold,green.bold\" \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "npm run dev --prefix server",
+    "dev:client": "npm run dev --prefix client",
+    "start": "npm run start --prefix server",
+    "build": "npm run build --prefix client",
+    "seed:dev": "npm run seed:dev --prefix server",
+    "sync-indexes": "npm run sync-indexes --prefix server",
+    "test": "npm run test --prefix server",
+    "test:server": "npm run test --prefix server",
+    "test:client": "npm run test --prefix client",
+    "test:all": "concurrently -n \"SERVER,CLIENT\" -c \"blue.bold,green.bold\" \"npm run test:server\" \"npm run test:client\"",
+    "install:all": "npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.6"
+  }
+}
