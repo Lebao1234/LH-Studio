@@ -31,7 +31,7 @@ const schema = z.object({
   JWT_AUDIENCE: z.string().default('lh-studio-client'),
 
   // Comma-separated list of allowed browser origins.
-  CLIENT_URL: z.string().default('http://localhost:5173'),
+  CLIENT_URL: z.string().default('http://localhost:5173,https://lh-studio-chi.vercel.app'),
 
   COOKIE_SECURE: bool(isProd),
   COOKIE_SAMESITE: z.enum(['lax', 'strict', 'none']).default(isProd ? 'none' : 'lax'),

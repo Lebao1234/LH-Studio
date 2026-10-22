@@ -9,7 +9,12 @@ export const ALLOWED_HEADERS = [
 ];
 
 export function isAllowedOrigin(origin) {
-  return Boolean(origin) && env.clientOrigins.includes(origin.replace(/\/$/, ''));
+  if (!origin) return false;
+  const normalized = origin.trim().replace(/\/$/, '');
+  if (env.clientOrigins.includes(normalized)) return true;
+  if (/^http:\/\/localhost(:\d+)?$/.test(normalized)) return true;
+  if (/^https:\/\/lh-studio[a-zA-Z0-9-]*\.vercel\.app$/.test(normalized)) return true;
+  return false;
 }
 
 export const corsOptions = {
@@ -24,4 +29,5 @@ export const corsOptions = {
   allowedHeaders: ALLOWED_HEADERS,
   exposedHeaders: ['Content-Disposition', 'Retry-After', 'RateLimit', 'RateLimit-Policy'],
   maxAge: 600,
+  optionsSuccessStatus: 200,
 };
