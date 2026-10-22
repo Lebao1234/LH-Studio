@@ -37,6 +37,15 @@ export function createApp() {
     next();
   });
 
+  app.get('/', (_req, res) =>
+    res.json({
+      status: 'ok',
+      message: 'LH Studio API is running',
+      version: '1.0.0',
+      health: '/health',
+      api: '/api/v1',
+    })
+  );
   app.get('/health', (_req, res) => res.json({ status: 'ok' }));
   app.use('/uploads', express.static(path.resolve(__dirname, '../uploads'), {
     maxAge: '7d',
